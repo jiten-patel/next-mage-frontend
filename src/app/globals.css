@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-@theme {
-  --font-poppins: Raleway, sans-serif;
+/* Shared page gutter, lines sections up with the design's 110px desktop margin. */
+@layer components {
+  .container {
+    @apply mx-auto w-full max-w-[1980px] px-5 md:px-[50px] xl:px-[110px];
+  }
 }
