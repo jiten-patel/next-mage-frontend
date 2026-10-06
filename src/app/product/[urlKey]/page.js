@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { gql, PRODUCT_FIELDS } from "@/lib/magento";
+import { getWishlist } from "@/lib/wishlist";
+import Breadcrumbs from "@/components/breadcrumbs";
 import ProductView from "@/components/product/product-view";
 import ProductGrid from "@/components/product-grid";
 import SectionHeading from "@/components/section-heading";
@@ -17,6 +19,7 @@ const PRODUCT = `query ($urlKey: String!) {
       short_description { html }
       ${MEDIA}
       price_range { ${MIN_PRICE} maximum_price { final_price { ${MONEY} } } }
+      categories { name url_path level include_in_menu breadcrumbs { category_name category_url_path } }
       related_products { ${PRODUCT_FIELDS} }
       ... on ConfigurableProduct {
         configurable_options {
@@ -56,6 +59,12 @@ const PRODUCT = `query ($urlKey: String!) {
   }
 }`;
 
+// Deepest menu category's trail; a product can sit in several (incl. hidden collections), so this picks one.
+const trail = (categories = []) => {
+  const c = categories.filter((c) => c.include_in_menu).sort((a, b) => b.level - a.level)[0];
+  return c ? [...(c.breadcrumbs ?? []), { category_name: c.name, category_url_path: c.url_path }].map((b) => ({ label: b.category_name, href: `/category/${b.category_url_path}` })) : [];
+};
+
 // Deduped across generateMetadata and the page within one request.
 const getProduct = cache(async (urlKey) => {
   const { products } = await gql(PRODUCT, { urlKey });
@@ -71,13 +80,16 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function ProductPage({ params }) {
-  const product = await getProduct((await params).urlKey);
+  const [product, wishlist] = await Promise.all([getProduct((await params).urlKey), getWishlist().catch(() => null)]);
+  // Every saved line for this product (configurables can be saved once per variant); the heart removes them all.
+  const wishlistItemIds = wishlist?.items.filter((i) => i.product.sku === product.sku).map((i) => i.id) ?? [];
   const related = product.related_products?.filter((p) => p.small_image) ?? [];
 
   return (
     <>
       <section className="px-5 py-10 md:px-[50px] md:py-[60px]">
-        <ProductView product={product} />
+        <Breadcrumbs items={[...trail(product.categories), { label: product.name }]} />
+        <ProductView product={product} wishlistItemIds={wishlistItemIds} />
       </section>
 
       {product.description?.html && (

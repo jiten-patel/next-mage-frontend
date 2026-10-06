@@ -11,13 +11,14 @@ export default function Gallery({ images, alt }) {
   return (
     <div>
       <Image
+        key={current.url} // remount on swap so the fade replays
         src={current.url}
         alt={current.label || alt}
         width={700}
         height={700}
         priority
         sizes="(min-width: 1024px) 50vw, 100vw"
-        className="w-full rounded-[10px] border border-line"
+        className="w-full animate-fade-in rounded-[10px] border border-line"
       />
       {list.length > 1 && (
         <div className="mt-3 grid grid-cols-5 gap-2">

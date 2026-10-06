@@ -32,6 +32,11 @@ export function resolve(product, selection) {
   };
 }
 
+// Magento takes the parent SKU plus the chosen value uids and resolves the variant itself.
+export function cartItems(product, selection, qty) {
+  return [{ sku: product.sku, quantity: qty, selected_options: Object.values(selection).filter(Boolean) }];
+}
+
 function swatchClasses(type, selected, disabled) {
   const state = `${selected ? "ring-2 ring-black ring-offset-2" : ""} ${disabled ? "cursor-not-allowed opacity-30" : ""}`;
   if (type === "ColorSwatchData" || type === "ImageSwatchData") {

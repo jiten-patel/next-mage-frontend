@@ -19,6 +19,11 @@ export function resolve(product, selection) {
   };
 }
 
+// Grouped products go into the cart as their individual children.
+export function cartItems(_product, selection) {
+  return Object.entries(selection).filter(([, qty]) => qty > 0).map(([sku, quantity]) => ({ sku, quantity }));
+}
+
 export default function GroupedItems({ product, selection, onChange }) {
   return (
     <ul className="mb-5 divide-y divide-line border-y border-line">

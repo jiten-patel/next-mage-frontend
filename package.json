@@ -6,7 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:auth": "node scripts/auth-smoke.mjs",
+    "test:cart": "node scripts/cart-smoke.mjs",
+    "test:wishlist": "node scripts/wishlist-smoke.mjs",
+    "test:listing": "node scripts/listing-smoke.mjs"
   },
   "dependencies": {
     "@tailwindplus/elements": "^1.0.9",

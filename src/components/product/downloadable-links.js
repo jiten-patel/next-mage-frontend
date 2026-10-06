@@ -17,6 +17,10 @@ export function resolve(product, selection) {
   return { price: { value: base.value + extra }, inStock, canAdd: inStock && selection.length > 0 };
 }
 
+export function cartItems(product, selection, qty) {
+  return [{ sku: product.sku, quantity: qty, selected_options: selection }];
+}
+
 function SampleLink({ href, children }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm underline">

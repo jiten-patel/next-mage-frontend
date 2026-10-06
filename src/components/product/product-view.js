@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { addToCart } from "@/lib/cart-actions";
+import { addToWishlist, removeFromWishlist } from "@/lib/wishlist-actions";
+import { OPEN_EVENT } from "../mini-cart";
+import Icon, { Spinner } from "../icon";
 import Gallery from "./gallery";
 import Price, { priceOf } from "./price";
 import * as configurable from "./configurable-options";
@@ -16,6 +20,7 @@ const plain = {
     return { price: priceOf(product.price_range.minimum_price), inStock, canAdd: inStock };
   },
   default: () => null,
+  cartItems: (product, _selection, qty) => [{ sku: product.sku, quantity: qty }],
 };
 
 const TYPES = {
@@ -25,13 +30,34 @@ const TYPES = {
   DownloadableProduct: downloadable,
 };
 
-export default function ProductView({ product }) {
+export default function ProductView({ product, wishlistItemIds = [] }) {
   const type = TYPES[product.__typename] ?? plain;
   const Options = type.default;
   const [selection, setSelection] = useState(() => type.initial(product));
   const [qty, setQty] = useState(1);
+  const [error, setError] = useState(null);
+  const [adding, startAdding] = useTransition();
+  const [saving, startSaving] = useTransition();
+  const saved = wishlistItemIds.length > 0;
+
+  const add = () =>
+    startAdding(async () => {
+      const result = await addToCart(type.cartItems(product, selection, qty));
+      setError(result.error ?? null);
+      // The action re-renders the header, so the mini-cart already holds the new line.
+      if (!result.error) window.dispatchEvent(new Event(OPEN_EVENT));
+    });
 
   const { images = product.media_gallery, price, inStock, canAdd } = type.resolve(product, selection);
+
+  // A fully chosen variant is saved with its options so it can go straight to the cart from the wishlist;
+  // otherwise the product itself is saved. Guests are redirected to log in by the action.
+  const toggleWishlist = () =>
+    startSaving(async () => {
+      const item = product.__typename === "ConfigurableProduct" && canAdd ? configurable.cartItems(product, selection, 1)[0] : { sku: product.sku };
+      const result = await (saved ? removeFromWishlist(wishlistItemIds) : addToWishlist(item));
+      setError(result?.error ?? null);
+    });
   const currency = product.price_range.minimum_price.final_price.currency;
 
   return (
@@ -66,15 +92,30 @@ export default function ProductView({ product }) {
               />
             </label>
           )}
-          {/* ponytail: not wired yet; step 7 sends { qty, selection } to Magento's addProductsToCart. */}
           <button
             type="button"
-            disabled={!canAdd}
-            className="rounded-[10px] border border-black bg-black px-8 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={add}
+            disabled={!canAdd || adding}
+            aria-busy={adding}
+            // Busy looks busy (spinner, wait cursor), not unavailable like an out-of-stock/incomplete selection.
+            className={`inline-flex items-center gap-2 rounded-[10px] border border-black bg-black px-8 py-3 font-semibold text-white ${adding ? "cursor-wait opacity-80" : "disabled:cursor-not-allowed disabled:opacity-40"}`}
           >
-            Add to cart
+            {adding && <Spinner />}
+            {adding ? "Adding…" : "Add to cart"}
+          </button>
+          <button
+            type="button"
+            onClick={toggleWishlist}
+            disabled={saving}
+            aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}
+            aria-busy={saving}
+            className={`inline-flex items-center gap-2 rounded-[10px] border border-black px-5 py-3 font-semibold text-black hover:bg-surface ${saving ? "cursor-wait opacity-80" : ""}`}
+          >
+            {saving ? <Spinner /> : <Icon name="heart" className={`size-5 ${saved ? "fill-current" : ""}`} />}
+            {saved ? "Saved" : "Wishlist"}
           </button>
         </div>
+        {error && <p role="alert" className="mt-3 animate-fade-in text-sm text-red-700">{error}</p>}
       </div>
     </div>
   );

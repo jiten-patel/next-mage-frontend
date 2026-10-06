@@ -12,7 +12,7 @@ export function Card({ href, image, alt, name, price }) {
           alt={alt || name}
           fill
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="object-contain p-4 transition duration-300 group-hover:scale-105"
+          className="object-contain p-4 transition duration-500 group-hover:scale-105"
         />
       </div>
       <div className="flex items-baseline justify-between gap-2 pt-3">

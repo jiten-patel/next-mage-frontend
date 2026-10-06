@@ -36,6 +36,14 @@ export function resolve(product, selection) {
   return { price: { value: total, label: "Total" }, inStock, canAdd: inStock && complete };
 }
 
+// Option uids are base64("bundle/{option}/{selection}/{qty}"); a changed quantity is re-encoded into the uid.
+const withQty = (uid, qty) => btoa(atob(uid).replace(/[^/]*$/, String(qty)));
+
+export function cartItems(product, selection, qty) {
+  const selected_options = Object.values(selection).flatMap((chosen) => Object.entries(chosen).map(([uid, q]) => withQty(uid, q)));
+  return [{ sku: product.sku, quantity: qty, selected_options }];
+}
+
 export default function BundleOptions({ product, selection, onChange }) {
   const currency = product.price_range.minimum_price.final_price.currency;
   const { minimum_price, maximum_price } = product.price_range;
